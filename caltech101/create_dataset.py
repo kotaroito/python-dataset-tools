@@ -21,6 +21,7 @@ def main():
     parser.add_argument('dir')
     parser.add_argument('--out', default='.')
     parser.add_argument('--seed', default=0)
+    parser.add_argument('--prefix')
     args = parser.parse_args()
 
     dir = args.dir
@@ -34,6 +35,11 @@ def main():
     test_path  = os.path.join(outdir, "test.txt")
     label_path = os.path.join(outdir, "label.txt")
 
+    if args.prefix:
+        path_prefix = args.prefix
+    else:
+        path_prefix = outdir
+
     if not os.path.exists(out_images_dir):
         os.mkdir(out_images_dir)
 
@@ -46,8 +52,9 @@ def main():
                 for src_path in images:
                     basename = os.path.basename(src_path)
                     dst_path = os.path.join(outdir, 'images', "{}_{}".format(label, basename))
+                    path_in_file = os.path.join(path_prefix, 'images', "{}_{}".format(label, basename))
 
-                    f.write("{} {}\n".format(dst_path, i))
+                    f.write("{} {}\n".format(path_in_file, i))
                     shutil.copyfile(src_path, dst_path)
             label_f.write("%d %s\n" % (i, label))
 
