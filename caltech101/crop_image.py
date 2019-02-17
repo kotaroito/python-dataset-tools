@@ -19,6 +19,7 @@ def main():
         im = Image.open(src_path)
         im = crop_max_square(im)
         im = im.resize((256, 256))
+        im = im.convert('RGB')
 
         dst_path = os.path.join(dst_dir, os.path.basename(src_path))
         im.save(dst_path)
