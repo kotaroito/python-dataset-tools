@@ -4,59 +4,66 @@ import glob
 import random
 import shutil
 
-def random_split(images):
-    random.shuffle(images)
-    size = len(images)
+def set_seed(seed):
+    random.seed(seed)
+
+def random_split(a):
+    random.shuffle(a)
+    size = len(a)
     i1  = int(size * 0.1)
     i2  = int(size * 0.2)
 
-    train_images = images[i2:]
-    valid_images = images[i1:i2]
-    test_images  = images[0:i1]
+    train = a[i2:]
+    valid = a[i1:i2]
+    test  = a[0:i1]
 
-    return (train_images, valid_images, test_images)
+    return (train, valid, test)
+
+def create_labeled_image_dataset(outdir, filename, image_label_list):
+    with open(os.path.join(outdir, filename), 'w') as f:
+        for src_path, idx, label in image_label_list:
+            basename = os.path.basename(src_path)
+            dst_path = os.path.join(outdir, 'images', "{}_{}".format(label, basename))
+
+            f.write("{} {}\n".format(dst_path, idx))
+            shutil.copyfile(src_path, dst_path)
+
+def create_label_txt(outdir, filename, label_idx_list):
+    with open(os.path.join(outdir, filename), 'w') as f:
+        for label, idx in label_idx_list:
+            f.write("%d %s\n" % (idx, label))
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('dir')
     parser.add_argument('--out', default='.')
     parser.add_argument('--seed', default=0)
-    parser.add_argument('--prefix')
     args = parser.parse_args()
 
     dir = args.dir
-    labels = sorted(os.listdir(dir))
-    random.seed(args.seed)
-
     outdir = os.path.abspath(args.out)
-    out_images_dir = os.path.join(outdir, "images")
-    train_path = os.path.join(outdir, "train.txt")
-    valid_path = os.path.join(outdir, "valid.txt")
-    test_path  = os.path.join(outdir, "test.txt")
-    label_path = os.path.join(outdir, "label.txt")
+    set_seed(args.seed)
 
-    if args.prefix:
-        path_prefix = args.prefix
-    else:
-        path_prefix = outdir
+    # create outdir/images dir
+    if not os.path.exists(os.path.join(outdir, "images")):
+        os.mkdir(os.path.join(outdir, "images"))
 
-    if not os.path.exists(out_images_dir):
-        os.mkdir(out_images_dir)
+    # get labels as dir name
+    labels = sorted(os.listdir(dir))
 
-    with open(train_path, 'w') as train_f, open(valid_path, 'w') as valid_f, open(test_path, 'w') as test_f, open(label_path, 'w') as label_f:
-        for i, label in enumerate(labels):
-            src_images = glob.glob(os.path.join(dir, label, '*.jpg'))
-            (train_images, valid_images, test_images) = random_split(src_images)
+    # start to create dataset
+    image_label_list = []
+    label_idx_list = []
+    for idx, label in enumerate(labels):
+        image_paths = glob.glob(os.path.join(dir, label, '*.jpg'))
+        image_label_list.extend([(img_path, idx, label) for img_path in image_paths])
+        label_idx_list.append((label, idx))
 
-            for f, images in ((train_f, train_images), (valid_f, valid_images), (test_f, test_images)):
-                for src_path in images:
-                    basename = os.path.basename(src_path)
-                    dst_path = os.path.join(outdir, 'images', "{}_{}".format(label, basename))
-                    path_in_file = os.path.join(path_prefix, 'images', "{}_{}".format(label, basename))
-
-                    f.write("{} {}\n".format(path_in_file, i))
-                    shutil.copyfile(src_path, dst_path)
-            label_f.write("%d %s\n" % (i, label))
+    (train_ds, valid_ds, test_ds) = random_split(image_label_list)
+    create_labeled_image_dataset(outdir, 'train.txt', train_ds)
+    create_labeled_image_dataset(outdir, 'valid.txt', valid_ds)
+    create_labeled_image_dataset(outdir, 'test.txt', test_ds)
+    create_label_txt(outdir, 'label.txt', label_idx_list)
 
 if __name__ == '__main__':
     main()
