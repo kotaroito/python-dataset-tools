@@ -4,8 +4,21 @@ import glob
 import random
 import shutil
 
+'''
+Caltech-101:
+Follow the procedure of (Fei-feiet al., 2006) and randomly select 30 images perclass for training and test on up to 50 images per class.
+'''
+
 def set_seed(seed):
     random.seed(seed)
+
+def split_train_valid(a):
+    random.shuffle(a)
+
+    train = a[0:30]
+    valid = a[30:80]
+
+    return (train, valid)
 
 def random_split(a):
     random.shuffle(a)
@@ -48,22 +61,29 @@ def main():
     if not os.path.exists(os.path.join(outdir, "images")):
         os.mkdir(os.path.join(outdir, "images"))
 
-    # get labels as dir name
-    labels = sorted(os.listdir(dir))
+    # get object categories
+    labels = sorted([d for d in os.listdir(dir) if not d == 'BACKGROUND_Google'])
 
-    # start to create dataset
-    image_label_list = []
-    label_idx_list = []
-    for idx, label in enumerate(labels):
+    train_ds = []
+    valid_ds = []
+    label_ds = []
+
+    # select train/valid set
+    for i, label in enumerate(labels):
         image_paths = glob.glob(os.path.join(dir, label, '*.jpg'))
-        image_label_list.extend([(img_path, idx, label) for img_path in image_paths])
-        label_idx_list.append((label, idx))
+        t, v = split_train_valid([(img_path, i, label) for img_path in image_paths])
+        train_ds.extend(t)
+        valid_ds.extend(v)
+        label_ds.append((label, i))
 
-    (train_ds, valid_ds, test_ds) = random_split(image_label_list)
+
+    # shuffle train dataset
+    random.shuffle(train_ds)
+
+    # create txt files
     create_labeled_image_dataset(outdir, 'train.txt', train_ds)
     create_labeled_image_dataset(outdir, 'valid.txt', valid_ds)
-    create_labeled_image_dataset(outdir, 'test.txt', test_ds)
-    create_label_txt(outdir, 'label.txt', label_idx_list)
+    create_label_txt(outdir, 'label.txt', label_ds)
 
 if __name__ == '__main__':
     main()
