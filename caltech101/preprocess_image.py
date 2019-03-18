@@ -26,7 +26,7 @@ def main():
         im = im.convert('RGB')
 
         dst_path = os.path.join(dst_dir, os.path.basename(src_path))
-        im.save(dst_path)
+        im.save(dst_path, format='JPEG', subsampling=0, quality=100)
 
         if args.verbose:
             print("{} -> {}".format(src_path, dst_path))
