@@ -8,8 +8,6 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('src_dir')
     parser.add_argument('dst_dir')
-    parser.add_argument("--crop", action="store_true")
-    parser.add_argument("--resize", action="store_true")
     parser.add_argument("--verbose", action="store_true")
     args = parser.parse_args()
 
@@ -19,10 +17,8 @@ def main():
     src_paths = glob.glob("{}/*.jpg".format(src_dir))
     for src_path in src_paths:
         im = Image.open(src_path)
-        if args.crop:
-            im = crop_max_square(im)
-        if args.resize:
-            im = im.resize((256, 256))
+        im = crop_max_square(im)
+        im = im.resize((256, 256))
         im = im.convert('RGB')
 
         dst_path = os.path.join(dst_dir, os.path.basename(src_path))
